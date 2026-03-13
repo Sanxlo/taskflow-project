@@ -12,4 +12,21 @@ La interfaz incluye:
 - Formulario de tareas
 - Panel de estadísticas
 
+TaskFlow
 
+Aplicación de gestión de tareas desarrollada con HTML, Tailwind CSS y JavaScript.
+
+Demo
+
+Aplicación desplegada en Vercel: https://taskflow-project-iota-gules.vercel.app/
+
+Funcionalidades
+
+- Crear tareas
+- Editar tareas
+- Eliminar tareas
+- Marcar tareas como completadas
+- Filtrar por estado
+- Buscar tareas
+- Persistencia con localStorage
+- Modo oscuro
