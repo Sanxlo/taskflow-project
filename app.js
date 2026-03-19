@@ -26,6 +26,11 @@ let currentFilter = "all";
 let currentSearch = "";
 let currentSort = "newest";
 
+/**
+ * Recupera un valor desde `localStorage` sin romper la app si el acceso falla.
+ * @param {string} key
+ * @returns {string|null}
+ */
 function safeStorageGetItem(key) {
   try {
     return localStorage.getItem(key);
@@ -35,6 +40,12 @@ function safeStorageGetItem(key) {
   }
 }
 
+/**
+ * Guarda un valor en `localStorage` sin romper la app si el acceso falla.
+ * @param {string} key
+ * @param {string} value
+ * @returns {boolean}
+ */
 function safeStorageSetItem(key, value) {
   try {
     localStorage.setItem(key, value);
@@ -45,6 +56,12 @@ function safeStorageSetItem(key, value) {
   }
 }
 
+/**
+ * Normaliza un objeto “task” hacia el shape esperado por la app.
+ * @param {any} maybeTask
+ * @param {number} fallbackIndex
+ * @returns {{id: string, title: string, completed: boolean, createdAt: string} | null}
+ */
 function normalizeTask(maybeTask, fallbackIndex) {
   if (!maybeTask || typeof maybeTask !== "object") return null;
 
@@ -69,6 +86,10 @@ function normalizeTask(maybeTask, fallbackIndex) {
   return { id, title, completed, createdAt };
 }
 
+/**
+ * Carga tareas desde LocalStorage y las normaliza para evitar fallos por datos corruptos.
+ * @returns {Array<{id: string, title: string, completed: boolean, createdAt: string}>}
+ */
 function loadTasks() {
   const savedTasks = safeStorageGetItem(STORAGE_KEY);
 
@@ -187,6 +208,11 @@ function renderTasks() {
   updateFilterButtons();
 }
 
+/**
+ * Crea el nodo DOM para una tarea.
+ * @param {{id: string, title: string, completed: boolean}} task
+ * @returns {HTMLLIElement}
+ */
 function createTaskElement(task) {
   const li = document.createElement("li");
   li.className = "animate-taskAppear transition-all duration-200";
@@ -206,7 +232,7 @@ function createTaskElement(task) {
   }
 
   const label = document.createElement("label");
-  label.className = "flex flex-1 items-center gap-3 m-0 cursor-pointer";
+  label.className = "flex flex-1 items-center gap-3 cursor-pointer";
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
@@ -217,7 +243,7 @@ function createTaskElement(task) {
 
   const span = document.createElement("span");
   span.className =
-    "leading-[1.4] break-words cursor-pointer dark:text-zinc-100";
+    "leading-[1.4] break-words dark:text-zinc-100";
   span.textContent = task.title;
 
   if (task.completed) {
