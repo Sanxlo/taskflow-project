@@ -173,6 +173,14 @@ function getPendingCount() {
   return tasks.filter((task) => !task.completed).length;
 }
 
+/**
+ * Aplica filtro (estado), búsqueda y ordenamiento a la lista de tareas.
+ * Ordenamiento soportado:
+ * - `newest`: tareas más recientes primero (`createdAt` desc)
+ * - `oldest`: tareas más antiguas primero (`createdAt` asc)
+ * - `alpha`: orden alfabético (A-Z) por `title`
+ * @returns {Array<{id: string, title: string, completed: boolean, createdAt: string}>}
+ */
 function getFilteredTasks() {
   let filteredTasks = [...tasks];
 
@@ -492,6 +500,10 @@ function setSearch(searchText) {
   renderTasks();
 }
 
+/**
+ * Actualiza el criterio de ordenamiento y re-renderiza la lista.
+ * @param {"newest"|"oldest"|"alpha"} sortKey
+ */
 function setSort(sortKey) {
   currentSort = sortKey;
   renderTasks();
