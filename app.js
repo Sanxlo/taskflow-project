@@ -27,7 +27,7 @@ let currentSearch = "";
 let currentSort = "newest";
 
 /**
- * Recupera un valor desde `localStorage` sin romper la app si el acceso falla.
+ * Recupera un valor desde `localStorage` sin romper la app si el acceso llega a fallar.
  * @param {string} key
  * @returns {string|null}
  */
