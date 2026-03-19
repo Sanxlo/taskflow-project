@@ -215,6 +215,10 @@ function getFilteredTasks() {
   return filteredTasks;
 }
 
+/**
+ * Actualiza el texto/visibilidad del estado vacío según el total y el filtro actual.
+ * @param {Array<any>} filteredTasks
+ */
 function updateEmptyState(filteredTasks) {
   if (!emptyState) {
     return;
@@ -235,6 +239,9 @@ function updateEmptyState(filteredTasks) {
   emptyState.hidden = true;
 }
 
+/**
+ * Renderiza la lista de tareas (ya filtrada y ordenada) y actualiza métricas UI.
+ */
 function renderTasks() {
   if (!taskList) {
     return;
@@ -364,6 +371,10 @@ function addTask(title) {
   renderTasks();
 }
 
+/**
+ * Alterna el estado `completed` de una tarea y vuelve a renderizar.
+ * @param {string} taskId
+ */
 function toggleTask(taskId) {
   tasks = tasks.map((task) =>
     task.id === taskId
@@ -375,6 +386,11 @@ function toggleTask(taskId) {
   renderTasks();
 }
 
+/**
+ * Elimina una tarea y (si se pasa `taskElement`) anima su salida antes de borrar.
+ * @param {string} taskId
+ * @param {HTMLElement=} taskElement
+ */
 function deleteTask(taskId, taskElement) {
   if (taskElement) {
     taskElement.classList.add("opacity-0", "translate-x-6");
@@ -393,6 +409,10 @@ function deleteTask(taskId, taskElement) {
   renderTasks();
 }
 
+/**
+ * Pide un nuevo título al usuario y actualiza la tarea.
+ * @param {string} taskId
+ */
 function editTask(taskId) {
   const taskToEdit = tasks.find((task) => task.id === taskId);
 
@@ -422,6 +442,9 @@ function editTask(taskId) {
   renderTasks();
 }
 
+/**
+ * Actualiza los contadores del panel lateral (total, completadas y pendientes).
+ */
 function updateStats() {
   const total = tasks.length;
   const completed = getCompletedCount();
@@ -432,6 +455,9 @@ function updateStats() {
   if (pendingTasksEl) pendingTasksEl.textContent = pending;
 }
 
+/**
+ * Actualiza la barra de progreso en base al porcentaje completado.
+ */
 function updateProgress() {
   const total = tasks.length;
   const completed = getCompletedCount();
@@ -446,6 +472,9 @@ function updateProgress() {
   }
 }
 
+/**
+ * Recalcula qué botón de filtro está activo visualmente.
+ */
 function updateFilterButtons() {
   filterButtons.forEach((button) => {
     const isActive = button.dataset.filter === currentFilter;
@@ -490,11 +519,19 @@ function updateFilterButtons() {
   });
 }
 
+/**
+ * Cambia el filtro de estado (all/pending/completed).
+ * @param {"all"|"pending"|"completed"} filter
+ */
 function setFilter(filter) {
   currentFilter = filter;
   renderTasks();
 }
 
+/**
+ * Cambia el texto de búsqueda y vuelve a renderizar.
+ * @param {string} searchText
+ */
 function setSearch(searchText) {
   currentSearch = searchText.trim();
   renderTasks();
@@ -509,6 +546,9 @@ function setSort(sortKey) {
   renderTasks();
 }
 
+/**
+ * Marca todas las tareas como completadas.
+ */
 function completeAllTasks() {
   if (tasks.length === 0) {
     return;
@@ -523,12 +563,19 @@ function completeAllTasks() {
   renderTasks();
 }
 
+/**
+ * Elimina todas las tareas completadas.
+ */
 function clearCompletedTasks() {
   tasks = tasks.filter((task) => !task.completed);
   saveTasks();
   renderTasks();
 }
 
+/**
+ * Aplica el tema al documento según el valor dado.
+ * @param {"dark"|"light"} theme
+ */
 function applyTheme(theme) {
   if (theme === "dark") {
     document.documentElement.classList.add("dark");
@@ -537,6 +584,9 @@ function applyTheme(theme) {
   }
 }
 
+/**
+ * Carga el tema desde LocalStorage, o usa `prefers-color-scheme` si no existe preferencia guardada.
+ */
 function loadTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
 
@@ -549,6 +599,9 @@ function loadTheme() {
   applyTheme(prefersDark ? "dark" : "light");
 }
 
+/**
+ * Conmuta el tema y persiste la preferencia en LocalStorage.
+ */
 function toggleTheme() {
   const isDark = document.documentElement.classList.contains("dark");
   const newTheme = isDark ? "light" : "dark";
