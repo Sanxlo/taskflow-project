@@ -1,8 +1,10 @@
 const STORAGE_KEY = "taskflow-tasks";
+const THEME_KEY = "taskflow-theme";
 
 const form = document.getElementById("task-form");
 const taskInput = document.getElementById("task-input");
 const searchInput = document.getElementById("search-input");
+const sortSelect = document.getElementById("sort-select");
 
 const taskList = document.getElementById("task-list");
 const emptyState = document.getElementById("empty-state");
@@ -17,33 +19,82 @@ const progressTextEl = document.getElementById("progress-text");
 const filterButtons = document.querySelectorAll("[data-filter]");
 const clearCompletedButton = document.getElementById("clear-completed");
 const completeAllButton = document.getElementById("complete-all");
+const themeToggleButton = document.getElementById("theme-toggle");
 
 let tasks = loadTasks();
 let currentFilter = "all";
 let currentSearch = "";
+let currentSort = "newest";
+
+function safeStorageGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    console.error("Error al leer LocalStorage:", error);
+    return null;
+  }
+}
+
+function safeStorageSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.error("Error al guardar en LocalStorage:", error);
+    return false;
+  }
+}
+
+function normalizeTask(maybeTask, fallbackIndex) {
+  if (!maybeTask || typeof maybeTask !== "object") return null;
+
+  const title = typeof maybeTask.title === "string" ? maybeTask.title.trim() : "";
+  const completed = typeof maybeTask.completed === "boolean" ? maybeTask.completed : false;
+
+  if (!title) return null;
+
+  const id =
+    typeof maybeTask.id === "string" && maybeTask.id
+      ? maybeTask.id
+      : crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${fallbackIndex}`;
+
+  const createdAtRaw = maybeTask.createdAt;
+  const createdAtDate = new Date(createdAtRaw);
+  const createdAt = isNaN(createdAtDate.getTime())
+    ? new Date().toISOString()
+    : createdAtDate.toISOString();
+
+  return { id, title, completed, createdAt };
+}
 
 function loadTasks() {
-  const savedTasks = localStorage.getItem(STORAGE_KEY);
+  const savedTasks = safeStorageGetItem(STORAGE_KEY);
 
   if (!savedTasks) {
     return [];
   }
+
   try {
     const parsedTasks = JSON.parse(savedTasks);
 
-    if (Array.isArray(parsedTasks)) {
-      return parsedTasks;
+    if (!Array.isArray(parsedTasks)) {
+      return [];
     }
 
-    return [];
+    // Normalize to the expected task shape to avoid runtime issues.
+    return parsedTasks
+      .map((task, idx) => normalizeTask(task, idx))
+      .filter(Boolean);
   } catch (error) {
-    console.error("Error al leer LocalStorage:", error);
+    console.error("Error al parsear tareas en LocalStorage:", error);
     return [];
   }
 }
 
 function saveTasks() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  safeStorageSetItem(STORAGE_KEY, JSON.stringify(tasks));
 }
 
 function createTask(title) {
@@ -80,82 +131,130 @@ function getFilteredTasks() {
     );
   }
 
+  if (currentSort === "newest") {
+    filteredTasks.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  } else if (currentSort === "oldest") {
+    filteredTasks.sort((a, b) => {
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
+  } else if (currentSort === "alpha") {
+    filteredTasks.sort((a, b) =>
+      a.title.localeCompare(b.title, "es", { sensitivity: "base" })
+    );
+  }
+
   return filteredTasks;
 }
 
-function renderTasks() {
-  const filteredTasks = getFilteredTasks();
+function updateEmptyState(filteredTasks) {
+  if (!emptyState) {
+    return;
+  }
 
-  taskList.innerHTML = "";
+  if (tasks.length === 0) {
+    emptyState.hidden = false;
+    emptyState.textContent = "No hay tareas todavía.";
+    return;
+  }
 
   if (filteredTasks.length === 0) {
     emptyState.hidden = false;
-  } else {
-    emptyState.hidden = true;
+    emptyState.textContent = "No se encontraron tareas con ese criterio.";
+    return;
   }
 
+  emptyState.hidden = true;
+}
+
+function renderTasks() {
+  if (!taskList) {
+    return;
+  }
+
+  const filteredTasks = getFilteredTasks();
+  taskList.innerHTML = "";
+
+  updateEmptyState(filteredTasks);
+
   filteredTasks.forEach((task) => {
-    const taskElement = createTaskElement(task);
-    taskList.appendChild(taskElement);
+    taskList.appendChild(createTaskElement(task));
   });
 
   updateStats();
   updateProgress();
   updateFilterButtons();
 }
+
 function createTaskElement(task) {
   const li = document.createElement("li");
-  li.className = "task-item animate-taskAppear transition-all duration-200";
+  li.className = "animate-taskAppear transition-all duration-200";
   li.dataset.id = task.id;
 
   const article = document.createElement("article");
-  article.className = "task-card flex items-center justify-between gap-3.5 px-[18px] dark:border-zinc-700 rounded-mdx bg-surface dark:bg-zinc-900 py-4 border border-borderMain rounded-mdx bg-surface hover:-translate-y-[2px] hover:shadow-card transition";
+  article.className =
+    "flex items-center justify-between gap-3.5 px-[18px] py-4 border rounded-xl bg-surface dark:bg-zinc-900 border-borderMain hover:-translate-y-[2px] hover:shadow-card transition dark:border-zinc-700";
 
   if (task.completed) {
-    article.classList.add("bg-[#fffaf7]", "border-[#f3d8c2]","dark:bg-zinc-800", "dark:border-zinc-700");
+    article.classList.add(
+      "bg-[#fffaf7]",
+      "border-[#f3d8c2]",
+      "dark:bg-zinc-800",
+      "dark:border-zinc-700"
+    );
   }
 
   const label = document.createElement("label");
-  label.className = "task-main flex flex-1 items-center gap-3 m-0 cursor-pointer";
+  label.className = "flex flex-1 items-center gap-3 m-0 cursor-pointer";
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
-  checkbox.className = "task-checkbox w-[18px] h-[18px] shrink-0 cursor-pointer accent-orange-600";
   checkbox.checked = task.completed;
+  checkbox.className =
+    "w-[18px] h-[18px] shrink-0 cursor-pointer accent-orange-600";
   checkbox.setAttribute("aria-label", `Completar tarea: ${task.title}`);
 
   const span = document.createElement("span");
-  span.className = "task-label leading-[1.4] dark:text-zinc-100 break-words cursor-pointer";
+  span.className =
+    "leading-[1.4] break-words cursor-pointer dark:text-zinc-100";
   span.textContent = task.title;
 
   if (task.completed) {
-    span.classList.add("text-textMuted", "line-through", "opacity-75","dark:text-zinc-400");
+    span.classList.add(
+      "line-through",
+      "opacity-75",
+      "text-textMuted",
+      "dark:text-zinc-400"
+    );
   }
 
   const actions = document.createElement("div");
-  actions.className = "task-actions flex gap-2.5 shrink-0";
+  actions.className = "flex gap-2.5 shrink-0";
 
   const editButton = document.createElement("button");
   editButton.type = "button";
-  editButton.className = "edit-task shrink-0 px-[14px] py-[10px] rounded-full bg-[#fff7ed] dark:border-zinc-700 font-bold hover:bg-[#ffedd5] dark:hover:bg-zinc-700  text-accentStrong border border-[#ffd7bf] font-bold hover:bg-[#ffedd5] hover:-translate-y-[1px] transition";
+  editButton.className =
+    "shrink-0 px-[14px] py-[10px] rounded-full border font-bold transition hover:-translate-y-[1px] bg-[#fff7ed] text-accentStrong border-[#ffd7bf] hover:bg-[#ffedd5] dark:border-zinc-700 dark:hover:bg-zinc-700";
   editButton.textContent = "Editar";
   editButton.setAttribute("aria-label", `Editar tarea: ${task.title}`);
 
   const deleteButton = document.createElement("button");
   deleteButton.type = "button";
-  deleteButton.className = "delete-task shrink-0 px-[14px] py-[10px] rounded-full bg-white text-accentStrong dark:border-zinc-700 font-bold hover:bg-[#ffedd5] dark:hover:bg-zinc-700  border border-dangerBorder font-bold hover:bg-dangerSoft hover:-translate-y-[1px] transition";
+  deleteButton.className =
+    "shrink-0 px-[14px] py-[10px] rounded-full border font-bold transition hover:-translate-y-[1px] bg-white text-accentStrong border-dangerBorder hover:bg-dangerSoft dark:border-zinc-700 dark:hover:bg-zinc-700";
   deleteButton.textContent = "Eliminar";
   deleteButton.setAttribute("aria-label", `Eliminar tarea: ${task.title}`);
 
-  checkbox.addEventListener("change", function () {
+  checkbox.addEventListener("change", () => {
     toggleTask(task.id);
   });
 
-  editButton.addEventListener("click", function () {
+  editButton.addEventListener("click", () => {
     editTask(task.id);
   });
 
-  deleteButton.addEventListener("click", function () {
+  deleteButton.addEventListener("click", () => {
     deleteTask(task.id, li);
   });
 
@@ -188,16 +287,11 @@ function addTask(title) {
 }
 
 function toggleTask(taskId) {
-  tasks = tasks.map((task) => {
-    if (task.id === taskId) {
-      return {
-        ...task,
-        completed: !task.completed
-      };
-    }
-
-    return task;
-  });
+  tasks = tasks.map((task) =>
+    task.id === taskId
+      ? { ...task, completed: !task.completed }
+      : task
+  );
 
   saveTasks();
   renderTasks();
@@ -240,16 +334,11 @@ function editTask(taskId) {
     return;
   }
 
-  tasks = tasks.map((task) => {
-    if (task.id === taskId) {
-      return {
-        ...task,
-        title: cleanTitle
-      };
-    }
-
-    return task;
-  });
+  tasks = tasks.map((task) =>
+    task.id === taskId
+      ? { ...task, title: cleanTitle }
+      : task
+  );
 
   saveTasks();
   renderTasks();
@@ -260,23 +349,23 @@ function updateStats() {
   const completed = getCompletedCount();
   const pending = getPendingCount();
 
-  totalTasksEl.textContent = total;
-  completedTasksEl.textContent = completed;
-  pendingTasksEl.textContent = pending;
+  if (totalTasksEl) totalTasksEl.textContent = total;
+  if (completedTasksEl) completedTasksEl.textContent = completed;
+  if (pendingTasksEl) pendingTasksEl.textContent = pending;
 }
 
 function updateProgress() {
   const total = tasks.length;
   const completed = getCompletedCount();
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  let percent = 0;
-
-  if (total > 0) {
-    percent = Math.round((completed / total) * 100);
+  if (progressEl) {
+    progressEl.style.width = `${percent}%`;
   }
 
-  progressEl.style.width = `${percent}%`;
-  progressTextEl.textContent = `${percent}% completado`;
+  if (progressTextEl) {
+    progressTextEl.textContent = `${percent}% completado`;
+  }
 }
 
 function updateFilterButtons() {
@@ -333,17 +422,20 @@ function setSearch(searchText) {
   renderTasks();
 }
 
+function setSort(sortKey) {
+  currentSort = sortKey;
+  renderTasks();
+}
+
 function completeAllTasks() {
   if (tasks.length === 0) {
     return;
   }
 
-  tasks = tasks.map((task) => {
-    return {
-      ...task,
-      completed: true
-    };
-  });
+  tasks = tasks.map((task) => ({
+    ...task,
+    completed: true
+  }));
 
   saveTasks();
   renderTasks();
@@ -354,37 +446,6 @@ function clearCompletedTasks() {
   saveTasks();
   renderTasks();
 }
-
-form.addEventListener("submit", function (event) {
-  event.preventDefault();
-
-  addTask(taskInput.value);
-  form.reset();
-  taskInput.focus();
-});
-
-if (searchInput) {
-  searchInput.addEventListener("input", function (event) {
-    setSearch(event.target.value);
-  });
-}
-
-filterButtons.forEach((button) => {
-  button.addEventListener("click", function () {
-    setFilter(button.dataset.filter);
-  });
-});
-
-if (completeAllButton) {
-  completeAllButton.addEventListener("click", completeAllTasks);
-}
-
-if (clearCompletedButton) {
-  clearCompletedButton.addEventListener("click", clearCompletedTasks);
-}
-
-const themeToggleButton = document.getElementById("theme-toggle");
-const THEME_KEY = "taskflow-theme";
 
 function applyTheme(theme) {
   if (theme === "dark") {
@@ -414,10 +475,47 @@ function toggleTheme() {
   applyTheme(newTheme);
 }
 
+if (form) {
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    addTask(taskInput.value);
+    form.reset();
+    taskInput.focus();
+  });
+}
+
+if (searchInput) {
+  searchInput.addEventListener("input", (event) => {
+    setSearch(event.target.value);
+  });
+}
+
+if (sortSelect) {
+  sortSelect.value = currentSort;
+
+  sortSelect.addEventListener("change", (event) => {
+    setSort(event.target.value);
+  });
+}
+
+filterButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setFilter(button.dataset.filter);
+  });
+});
+
+if (completeAllButton) {
+  completeAllButton.addEventListener("click", completeAllTasks);
+}
+
+if (clearCompletedButton) {
+  clearCompletedButton.addEventListener("click", clearCompletedTasks);
+}
+
 if (themeToggleButton) {
   themeToggleButton.addEventListener("click", toggleTheme);
 }
 
 loadTheme();
-
 renderTasks();
