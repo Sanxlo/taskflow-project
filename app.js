@@ -127,6 +127,44 @@ function createTask(title) {
   };
 }
 
+/**
+ * Valida el título antes de crear una nueva tarea.
+ * @param {string} title
+ * @returns {{ valid: boolean, message?: string, cleanTitle?: string }}
+ */
+function validateTaskTitleForCreate(title) {
+  const cleanTitle = String(title ?? "").trim();
+
+  if (!cleanTitle) {
+    return { valid: false, message: "La tarea no puede estar vacía." };
+  }
+
+  // Regla simple para evitar títulos demasiado cortos.
+  if (cleanTitle.length < 3) {
+    return {
+      valid: false,
+      message: "La tarea debe tener al menos 3 caracteres."
+    };
+  }
+
+  if (cleanTitle.length > 100) {
+    return {
+      valid: false,
+      message: "La tarea no puede superar los 100 caracteres."
+    };
+  }
+
+  const isDuplicate = tasks.some((task) => {
+    return task.title.toLowerCase() === cleanTitle.toLowerCase();
+  });
+
+  if (isDuplicate) {
+    return { valid: false, message: "Ya existe una tarea con ese título." };
+  }
+
+  return { valid: true, cleanTitle };
+}
+
 function getCompletedCount() {
   return tasks.filter((task) => task.completed).length;
 }
@@ -298,12 +336,18 @@ function createTaskElement(task) {
   return li;
 }
 
+/**
+ * Añade una nueva tarea (usada por el formulario).
+ * @param {string} title
+ */
 function addTask(title) {
-  const cleanTitle = title.trim();
-
-  if (!cleanTitle) {
+  const validation = validateTaskTitleForCreate(title);
+  if (!validation.valid) {
+    window.alert(validation.message);
     return;
   }
+
+  const cleanTitle = validation.cleanTitle;
 
   const newTask = createTask(cleanTitle);
   tasks.unshift(newTask);
