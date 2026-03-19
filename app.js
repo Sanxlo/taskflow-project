@@ -216,27 +216,24 @@ function getFilteredTasks() {
 }
 
 /**
- * Actualiza el texto/visibilidad del estado vacío según el total y el filtro actual.
- * @param {Array<any>} filteredTasks
+ * Actualiza el estado vacío (mensaje + visibilidad) según los conteos actuales.
+ * @param {number} totalCount
+ * @param {number} visibleCount
  */
-function updateEmptyState(filteredTasks) {
-  if (!emptyState) {
-    return;
+function updateEmptyState(totalCount, visibleCount) {
+  if (!emptyState) return;
+
+  let message = "";
+
+  if (totalCount === 0) {
+    message = "No hay tareas todavía.";
+  } else if (visibleCount === 0) {
+    message = "No se encontraron tareas con ese criterio.";
   }
 
-  if (tasks.length === 0) {
-    emptyState.hidden = false;
-    emptyState.textContent = "No hay tareas todavía.";
-    return;
-  }
-
-  if (filteredTasks.length === 0) {
-    emptyState.hidden = false;
-    emptyState.textContent = "No se encontraron tareas con ese criterio.";
-    return;
-  }
-
-  emptyState.hidden = true;
+  const shouldShow = Boolean(message);
+  emptyState.hidden = !shouldShow;
+  if (shouldShow) emptyState.textContent = message;
 }
 
 /**
@@ -248,9 +245,10 @@ function renderTasks() {
   }
 
   const filteredTasks = getFilteredTasks();
+  const totalCount = tasks.length;
   taskList.innerHTML = "";
 
-  updateEmptyState(filteredTasks);
+  updateEmptyState(totalCount, filteredTasks.length);
 
   filteredTasks.forEach((task) => {
     taskList.appendChild(createTaskElement(task));
