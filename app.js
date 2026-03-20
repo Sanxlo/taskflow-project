@@ -177,6 +177,45 @@ function validateTaskTitleForCreate(title) {
   return { valid: true, cleanTitle };
 }
 
+/**
+ * Valida el título al editar una tarea existente.
+ * @param {string} taskId
+ * @param {string} nextTitle
+ * @returns {{ valid: boolean, message?: string, cleanTitle?: string, isNoop?: boolean }}
+ */
+function validateTaskTitleForEdit(taskId, nextTitle) {
+  const cleanTitle = String(nextTitle ?? "").trim();
+
+  if (!cleanTitle) {
+    return { valid: false, message: "La tarea no puede estar vacía." };
+  }
+
+  if (cleanTitle.length < 3) {
+    return { valid: false, message: "La tarea debe tener al menos 3 caracteres." };
+  }
+
+  if (cleanTitle.length > 100) {
+    return { valid: false, message: "La tarea no puede superar los 100 caracteres." };
+  }
+
+  const current = tasks.find((task) => task.id === taskId);
+  const currentTitle = current?.title ?? "";
+  if (currentTitle.toLowerCase() === cleanTitle.toLowerCase()) {
+    return { valid: true, cleanTitle: currentTitle, isNoop: true };
+  }
+
+  const isDuplicate = tasks.some((task) => {
+    if (task.id === taskId) return false;
+    return String(task.title ?? "").toLowerCase() === cleanTitle.toLowerCase();
+  });
+
+  if (isDuplicate) {
+    return { valid: false, message: "Ya existe una tarea con ese título." };
+  }
+
+  return { valid: true, cleanTitle };
+}
+
 function getCompletedCount() {
   return tasks.filter((task) => task.completed).length;
 }
@@ -438,11 +477,17 @@ function editTask(taskId) {
     return;
   }
 
-  const cleanTitle = newTitle.trim();
-
-  if (!cleanTitle) {
+  const validation = validateTaskTitleForEdit(taskId, newTitle);
+  if (!validation.valid) {
+    window.alert(validation.message);
     return;
   }
+
+  if (validation.isNoop) {
+    return;
+  }
+
+  const cleanTitle = validation.cleanTitle;
 
   tasks = tasks.map((task) =>
     task.id === taskId
