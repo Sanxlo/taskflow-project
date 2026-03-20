@@ -239,3 +239,176 @@ proponer refactorizaciones controladas
 extender funcionalidades sin romper las anteriores
 
 En el caso de TaskFlow, me ayudó sobre todo a confirmar qué partes del proyecto ya estaban bien resueltas, cuáles necesitaban limpieza y cómo añadir mejoras como la ordenación manteniendo la estructura y el estilo del código existente.
+
+
+
+Uso de MCP (Model Context Protocol) en TaskFlow
+Objetivo
+
+Este documento describe la configuración, uso y verificación de un servidor MCP dentro del proyecto TaskFlow utilizando Cursor, así como ejemplos prácticos de consultas realizadas sobre el proyecto.
+
+¿Qué es MCP?
+
+El Model Context Protocol (MCP) es un estándar que permite conectar herramientas de inteligencia artificial con fuentes externas como:
+
+sistema de archivos
+
+APIs
+
+bases de datos
+
+repositorios
+
+En este proyecto, se ha utilizado un servidor MCP de tipo filesystem, que permite a la IA acceder directamente a los archivos del proyecto.
+
+Configuración del servidor MCP
+
+Se ha configurado el servidor MCP mediante el archivo mcp.json con la siguiente estructura:
+
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "C:/Users/LENOVO/taskflow-project"
+      ]
+    }
+  }
+}
+🔧 Requisitos
+
+Node.js instalado
+
+Cursor configurado con soporte MCP
+
+Ruta correcta al proyecto TaskFlow
+
+Autorización de comandos
+
+Durante la primera ejecución, Cursor solicita autorización para ejecutar comandos del sistema (en este caso, PowerShell).
+
+Este paso es necesario por seguridad, ya que el servidor MCP puede interactuar con el sistema de archivos.
+
+Acción realizada
+
+Se autorizó el uso de PowerShell mediante:
+
+Allowlist 'powershell'
+
+Run
+
+Verificación de funcionamiento
+
+Una vez configurado y autorizado el servidor MCP, se realizaron varias consultas para comprobar su correcto funcionamiento.
+
+El objetivo era verificar que la IA podía acceder al contenido real del proyecto.
+
+Consultas realizadas
+1. Listado de archivos del proyecto
+
+Consulta:
+
+Lista los archivos de mi proyecto
+
+Resultado esperado:
+
+Se muestran archivos como:
+
+index.html
+
+style.css
+
+script.js / app.js
+
+Verificación:
+✔ Acceso correcto al sistema de archivos
+
+2. Análisis de estructura HTML
+
+Consulta:
+
+Abre index.html y resume su estructura
+
+Resultado esperado:
+
+Descripción de secciones como:
+
+formulario de tareas
+
+filtros
+
+búsqueda
+
+lista de tareas
+
+Verificación:
+✔ Lectura directa de archivos HTML
+
+3. Búsqueda de elementos del DOM
+
+Consulta:
+
+Busca search-input en el proyecto
+
+Resultado esperado:
+
+Ubicación en index.html
+
+Uso en script.js
+
+Verificación:
+✔ Relación entre HTML y JavaScript
+
+4. Análisis de funciones
+
+Consulta:
+
+Dime qué hace getFilteredTasks
+
+Resultado esperado:
+
+Explicación de:
+
+filtrado por estado
+
+búsqueda por texto
+
+ordenación
+
+Verificación:
+✔ Acceso a lógica interna del proyecto
+
+5. Detección de inconsistencias
+
+Consulta:
+
+Detecta inconsistencias entre HTML y JS
+
+Resultado esperado:
+
+Posibles diferencias entre:
+
+IDs del DOM
+
+clases CSS
+
+uso de Tailwind vs style.css
+
+Verificación:
+✔ Análisis cruzado entre archivos
+
+Casos de uso en proyectos reales
+
+El uso de MCP resulta especialmente útil en:
+
+proyectos grandes con muchos archivos
+
+revisión automática de código
+
+detección de inconsistencias entre capas (HTML, CSS, JS)
+
+acceso a documentación interna sin copiar contenido manualmente
+
+integración con servicios externos (GitHub, APIs, etc.)
+
