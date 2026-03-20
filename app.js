@@ -26,6 +26,18 @@ let currentFilter = "all";
 let currentSearch = "";
 let currentSort = "newest";
 
+const ALLOWED_FILTERS = new Set(["all", "pending", "completed"]);
+
+/**
+ * Normaliza el valor del filtro hacia un conjunto permitido.
+ * @param {unknown} filter
+ * @returns {"all"|"pending"|"completed"}
+ */
+function normalizeFilter(filter) {
+  const value = String(filter ?? "").trim().toLowerCase();
+  return ALLOWED_FILTERS.has(value) ? value : "all";
+}
+
 /**
  * Recupera un valor desde `localStorage` sin romper la app si el acceso llega a fallar.
  * @param {string} key
@@ -184,9 +196,11 @@ function getPendingCount() {
 function getFilteredTasks() {
   let filteredTasks = [...tasks];
 
-  if (currentFilter === "pending") {
+  const safeFilter = normalizeFilter(currentFilter);
+
+  if (safeFilter === "pending") {
     filteredTasks = filteredTasks.filter((task) => !task.completed);
-  } else if (currentFilter === "completed") {
+  } else if (safeFilter === "completed") {
     filteredTasks = filteredTasks.filter((task) => task.completed);
   }
 
@@ -522,7 +536,7 @@ function updateFilterButtons() {
  * @param {"all"|"pending"|"completed"} filter
  */
 function setFilter(filter) {
-  currentFilter = filter;
+  currentFilter = normalizeFilter(filter);
   renderTasks();
 }
 
