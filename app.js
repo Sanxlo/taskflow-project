@@ -39,7 +39,7 @@ function normalizeFilter(filter) {
 }
 
 /**
- * Recupera un valor desde `localStorage` sin romper la app si el acceso llega a fallar.
+ * Recupera un valor desde `localStorage` sin romper la app si el acceso llega a fallar
  * @param {string} key
  * @returns {string|null}
  */
